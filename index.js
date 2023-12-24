@@ -61,6 +61,12 @@ async function run() {
             const result = await myPostedJob.findOne(query);
             res.send(result)
         })
+        app.get('/update/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await myPostedJob.findOne(query);
+            res.send(result)
+        })
         app.get('/jobDetails/:id/placeBid', async (req, res) => {
             const jobId = req.params.id;
             console.log('getting job id', jobId)
@@ -73,6 +79,26 @@ async function run() {
         app.post('/myPostedJob', async (req, res) => {
             const job = req.body;
             const result = await myPostedJob.insertOne(job);
+            res.send(result)
+        })
+        app.put('/myPostedJob/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const job = req.body;
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    "jobDetails.category": job.jobDetails.category,
+                    "jobDetails.date": job.jobDetails.date,
+                    "jobDetails.description": job.jobDetails.description,
+                    "jobDetails.jobTitle": job.jobDetails.jobTitle,
+                    "jobDetails.email": job.jobDetails.email,
+                    "jobDetails.maximumPrice": job.jobDetails.maximumPrice,
+                    "jobDetails.minimumPrice": job.jobDetails.minimumPrice
+                }
+            }
+            console.log(updateDoc)
+            const result = await myPostedJob.updateOne(query, updateDoc, options);
             res.send(result)
         })
         // app.get('/myPostedJob/:email', (req, res) => {
