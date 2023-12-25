@@ -29,9 +29,9 @@ const client = new MongoClient(uri, {
 });
 
 const verifyToken = (req, res, next) => {
-    console.log("line 32 : ", req.cookies?.token)
+    // console.log("line 32 : ", req.cookies?.token)
     const token = req.cookies?.token;
-    console.log('token is in line 33', token);
+    // console.log('token is in line 33', token);
     if (!token) {
         return res.status(401).send({ message: "unauthorized access" })
     }
@@ -108,7 +108,6 @@ async function run() {
         });
         app.post('/myPostedJob', logger, async (req, res) => {
             const job = req.body;
-            // console.log('line 110', req.user)
             const result = await myPostedJob.insertOne(job);
             res.send(result)
         });
@@ -146,14 +145,31 @@ async function run() {
         app.post("/myBids", async (req, res) => {
             const jobBody = req.body;
             console.log("bid api", jobBody);
-            console.log("bid collection", bidCollection)
+            // console.log("bid collection", bidCollection)
             const result = await bidCollection.insertOne(jobBody);
             res.send(result)
         })
-        app.get('/myBids', async (req, res) => {
+        app.get('/myBids', logger, verifyToken, async (req, res) => {
             const bidsData = req.body;
+            console.log("get body", bidsData)
+            console.log('getting cookie from myBids', req.cookies)
+            console.log('getting query from mybids', req.query)
+            console.log('getting user from mybids', req.user.email);
+            // const query = {
+            //     $or: [{ sellerEmail: req.query.sellerEmail }, { buyerEmail: req.body.email }]
+            // }
 
-            const result = await bidCollection.find(bidsData).toArray();
+            let query = {};
+            if (req?.user?.email !== req?.query?.email) {
+                return res.status(401).send({ message: "Access deanied" })
+            }
+            else if (req?.query?.email) {
+                query = { email: req.query.email }
+            }
+            console.log("final query", query)
+            const result = await bidCollection.find(query).toArray();
+            console.log("get result", result);
+            // result.map(r => console.log("get result", r.sellerEmail))
             res.send(result)
         })
 
