@@ -1,8 +1,8 @@
 const express = require('express');
+var jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser')
 const app = express();
 const cors = require('cors');
-var jwt = require('jsonwebtoken');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 
@@ -28,6 +28,29 @@ const client = new MongoClient(uri, {
     }
 });
 
+const verifyToken = (req, res, next) => {
+    console.log("line 32 : ", req.cookies?.token)
+    const token = req.cookies?.token;
+    console.log('token is in line 33', token);
+    if (!token) {
+        return res.status(401).send({ message: "unauthorized access" })
+    }
+    jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'access denied' })
+        }
+        console.log("verifying token successful", decoded);
+
+        req.user = decoded;
+        console.log("user decoded", decoded)
+        next()
+    })
+}
+const logger = (req, res, next) => {
+    console.log("log info", req.method, req.url);
+    next()
+}
+
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
@@ -35,52 +58,60 @@ async function run() {
         const database = client.db("jobGenie");
         const category = database.collection("category");
         const myPostedJob = database.collection("myPostedJobs");
+        const bidCollection = database.collection("bidCollection");
 
         app.post("/jwt", async (req, res) => {
             const user = req.body;
-            console.log(user);
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '1h' })
-            res
-                .cookie('Access token', token, {
-                    httpOnly: true,
-                    secure: true,
-                    sameSite: 'none'
-                })
+            // console.log('jwt user is', user);
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '24h' });
+            // console.log("get token ", token)
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'none'
+            })
                 .send({ success: true })
+        });
+        app.post("/logout", (req, res) => {
+            const user = req.body;
+            res.clearCookie('token', { maxAge: 0 }).send({ success: true })
         })
+        // app.get('')
 
         app.get('/category/:category', async (req, res) => {
             const data = req.params.category;
+            // console.log(req.cookies.token)
             const query = { "jobDetails.category": data };
             const result = await myPostedJob.find(query).toArray();
             res.send(result)
-        })
+        });
         app.get('/jobDetails/:id', async (req, res) => {
             const jobId = req.params.id;
             const query = { _id: new ObjectId(jobId) };
             const result = await myPostedJob.findOne(query);
             res.send(result)
-        })
+        });
         app.get('/update/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await myPostedJob.findOne(query);
             res.send(result)
-        })
+        });
         app.get('/jobDetails/:id/placeBid', async (req, res) => {
             const jobId = req.params.id;
-            console.log('getting job id', jobId)
+            // console.log('getting job id', jobId)
             const query = { _id: new ObjectId(jobId) };
-            console.log("job query", query)
+            // console.log("job query", query)
             const result = await myPostedJob.findOne(query);
-            console.log("job result", result)
+            // console.log("job result", result)
             res.send(result)
-        })
-        app.post('/myPostedJob', async (req, res) => {
+        });
+        app.post('/myPostedJob', logger, async (req, res) => {
             const job = req.body;
+            // console.log('line 110', req.user)
             const result = await myPostedJob.insertOne(job);
             res.send(result)
-        })
+        });
         app.put('/myPostedJob/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
@@ -97,13 +128,34 @@ async function run() {
                     "jobDetails.minimumPrice": job.jobDetails.minimumPrice
                 }
             }
-            console.log(updateDoc)
+            // console.log(updateDoc)
             const result = await myPostedJob.updateOne(query, updateDoc, options);
             res.send(result)
+        });
+        app.get('/myPostedJob', logger, verifyToken, async (req, res) => {
+            let query = {};
+            if (req.query?.email !== req.user?.email) {
+                return res.status(401).send({ message: "Forbidden for this user" })
+            }
+            if (req.query?.email) {
+                query = { "jobDetails.email": req.query.email }
+            }
+            const result = await myPostedJob.find(query).toArray();
+            res.send(result)
+        });
+        app.post("/myBids", async (req, res) => {
+            const jobBody = req.body;
+            console.log("bid api", jobBody);
+            console.log("bid collection", bidCollection)
+            const result = await bidCollection.insertOne(jobBody);
+            res.send(result)
         })
-        // app.get('/myPostedJob/:email', (req, res) => {
+        app.get('/myBids', async (req, res) => {
+            const bidsData = req.body;
 
-        // })
+            const result = await bidCollection.find(bidsData).toArray();
+            res.send(result)
+        })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
