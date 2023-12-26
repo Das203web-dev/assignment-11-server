@@ -150,15 +150,6 @@ async function run() {
             res.send(result)
         })
         app.get('/myBids', logger, verifyToken, async (req, res) => {
-            const bidsData = req.body;
-            console.log("get body", bidsData)
-            console.log('getting cookie from myBids', req.cookies)
-            console.log('getting query from mybids', req.query)
-            console.log('getting user from mybids', req.user.email);
-            // const query = {
-            //     $or: [{ sellerEmail: req.query.sellerEmail }, { buyerEmail: req.body.email }]
-            // }
-
             let query = {};
             if (req?.user?.email !== req?.query?.email) {
                 return res.status(401).send({ message: "Access deanied" })
@@ -170,6 +161,36 @@ async function run() {
             const result = await bidCollection.find(query).toArray();
             console.log("get result", result);
             // result.map(r => console.log("get result", r.sellerEmail))
+            res.send(result)
+        })
+        app.get('/bidRequest', logger, verifyToken, async (req, res) => {
+            console.log("calling from bid request", req.user.email)
+            console.log("calling from bid request query", req.query);
+            let query = {};
+            if (req.query?.email !== req.user?.email) {
+                return res.status(401).send({ message: "Access Denied from bid request" })
+            }
+            if (req.query?.email) {
+                query = { buyerEmail: req.query.email }
+            }
+            // const query = { email: req.query.email }
+            const result = await bidCollection.find(query).toArray();
+
+            console.log("calling from line 178", result);
+            res.send(result)
+
+        })
+        app.put("/bidRequest/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const bidJob = req.body;
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    status: bidJob.status
+                }
+            }
+            const result = await bidCollection.updateOne(query, updateDoc, options);
             res.send(result)
         })
 
