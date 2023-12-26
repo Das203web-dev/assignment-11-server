@@ -16,7 +16,6 @@ app.use(cookieParser())
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-// const cookieParser = require('cookie-parser');
 const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.zolxyx7.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -29,9 +28,7 @@ const client = new MongoClient(uri, {
 });
 
 const verifyToken = (req, res, next) => {
-    // console.log("line 32 : ", req.cookies?.token)
     const token = req.cookies?.token;
-    // console.log('token is in line 33', token);
     if (!token) {
         return res.status(401).send({ message: "unauthorized access" })
     }
@@ -62,9 +59,7 @@ async function run() {
 
         app.post("/jwt", async (req, res) => {
             const user = req.body;
-            // console.log('jwt user is', user);
             const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '24h' });
-            // console.log("get token ", token)
             res.cookie('token', token, {
                 httpOnly: true,
                 secure: true,
@@ -75,12 +70,9 @@ async function run() {
         app.post("/logout", (req, res) => {
             const user = req.body;
             res.clearCookie('token', { maxAge: 0 }).send({ success: true })
-        })
-        // app.get('')
-
+        });
         app.get('/category/:category', async (req, res) => {
             const data = req.params.category;
-            // console.log(req.cookies.token)
             const query = { "jobDetails.category": data };
             const result = await myPostedJob.find(query).toArray();
             res.send(result)
@@ -99,11 +91,8 @@ async function run() {
         });
         app.get('/jobDetails/:id/placeBid', async (req, res) => {
             const jobId = req.params.id;
-            // console.log('getting job id', jobId)
             const query = { _id: new ObjectId(jobId) };
-            // console.log("job query", query)
             const result = await myPostedJob.findOne(query);
-            // console.log("job result", result)
             res.send(result)
         });
         app.post('/myPostedJob', logger, async (req, res) => {
@@ -127,7 +116,6 @@ async function run() {
                     "jobDetails.minimumPrice": job.jobDetails.minimumPrice
                 }
             }
-            // console.log(updateDoc)
             const result = await myPostedJob.updateOne(query, updateDoc, options);
             res.send(result)
         });
@@ -145,7 +133,6 @@ async function run() {
         app.post("/myBids", async (req, res) => {
             const jobBody = req.body;
             console.log("bid api", jobBody);
-            // console.log("bid collection", bidCollection)
             const result = await bidCollection.insertOne(jobBody);
             res.send(result)
         })
@@ -160,7 +147,6 @@ async function run() {
             console.log("final query", query)
             const result = await bidCollection.find(query).toArray();
             console.log("get result", result);
-            // result.map(r => console.log("get result", r.sellerEmail))
             res.send(result)
         })
         app.get('/bidRequest', logger, verifyToken, async (req, res) => {
@@ -173,9 +159,7 @@ async function run() {
             if (req.query?.email) {
                 query = { buyerEmail: req.query.email }
             }
-            // const query = { email: req.query.email }
             const result = await bidCollection.find(query).toArray();
-
             console.log("calling from line 178", result);
             res.send(result)
 
