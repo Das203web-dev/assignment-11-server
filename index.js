@@ -77,13 +77,13 @@ async function run() {
             const result = await myPostedJob.find(query).toArray();
             res.send(result)
         });
-        app.get('/jobDetails/:id', async (req, res) => {
+        app.get('/jobDetails/:id', verifyToken, async (req, res) => {
             const jobId = req.params.id;
             const query = { _id: new ObjectId(jobId) };
             const result = await myPostedJob.findOne(query);
             res.send(result)
         });
-        app.get('/update/:id', async (req, res) => {
+        app.get('/update/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await myPostedJob.findOne(query);
@@ -100,7 +100,7 @@ async function run() {
             const result = await myPostedJob.insertOne(job);
             res.send(result)
         });
-        app.put('/myPostedJob/:id', async (req, res) => {
+        app.put('/myPostedJob/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const job = req.body;
@@ -130,9 +130,8 @@ async function run() {
             const result = await myPostedJob.find(query).toArray();
             res.send(result)
         });
-        app.post("/myBids", async (req, res) => {
+        app.post("/myBids", verifyToken, async (req, res) => {
             const jobBody = req.body;
-            console.log("bid api", jobBody);
             const result = await bidCollection.insertOne(jobBody);
             res.send(result)
         })
@@ -144,14 +143,10 @@ async function run() {
             else if (req?.query?.email) {
                 query = { email: req.query.email }
             }
-            console.log("final query", query)
             const result = await bidCollection.find(query).toArray();
-            console.log("get result", result);
             res.send(result)
         })
         app.get('/bidRequest', logger, verifyToken, async (req, res) => {
-            console.log("calling from bid request", req.user.email)
-            console.log("calling from bid request query", req.query);
             let query = {};
             if (req.query?.email !== req.user?.email) {
                 return res.status(401).send({ message: "Access Denied from bid request" })
@@ -160,7 +155,6 @@ async function run() {
                 query = { buyerEmail: req.query.email }
             }
             const result = await bidCollection.find(query).toArray();
-            console.log("calling from line 178", result);
             res.send(result)
 
         })
