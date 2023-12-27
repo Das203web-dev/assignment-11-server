@@ -68,7 +68,7 @@ async function run() {
                 .send({ success: true })
         });
         app.post("/logout", (req, res) => {
-            const user = req.body;
+            // const user = req.body;
             res.clearCookie('token', { maxAge: 0 }).send({ success: true })
         });
         app.get('/category/:category', async (req, res) => {
@@ -77,13 +77,13 @@ async function run() {
             const result = await myPostedJob.find(query).toArray();
             res.send(result)
         });
-        app.get('/jobDetails/:id', verifyToken, async (req, res) => {
+        app.get('/jobDetails/:id', async (req, res) => {
             const jobId = req.params.id;
             const query = { _id: new ObjectId(jobId) };
             const result = await myPostedJob.findOne(query);
             res.send(result)
         });
-        app.get('/update/:id', verifyToken, async (req, res) => {
+        app.get('/update/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await myPostedJob.findOne(query);
@@ -95,7 +95,7 @@ async function run() {
             const result = await myPostedJob.findOne(query);
             res.send(result)
         });
-        app.post('/myPostedJob', logger, async (req, res) => {
+        app.post('/myPostedJob', logger, verifyToken, async (req, res) => {
             const job = req.body;
             const result = await myPostedJob.insertOne(job);
             res.send(result)
@@ -170,6 +170,12 @@ async function run() {
             }
             const result = await bidCollection.updateOne(query, updateDoc, options);
             res.send(result)
+        });
+        app.delete("/myPostedJob/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await myPostedJob.deleteOne(query);
+            res.send(result);
         })
 
         // Send a ping to confirm a successful connection
