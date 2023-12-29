@@ -36,10 +36,7 @@ const verifyToken = (req, res, next) => {
         if (err) {
             return res.status(401).send({ message: 'access denied' })
         }
-        console.log("verifying token successful", decoded);
-
         req.user = decoded;
-        console.log("user decoded", decoded)
         next()
     })
 }
@@ -68,7 +65,6 @@ async function run() {
                 .send({ success: true })
         });
         app.post("/logout", (req, res) => {
-            // const user = req.body;
             res.clearCookie('token', { maxAge: 0 }).send({ success: true })
         });
         app.get('/category/:category', async (req, res) => {
