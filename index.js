@@ -7,7 +7,7 @@ require('dotenv').config();
 const port = process.env.PORT || 5000;
 
 app.use(cors({
-    origin: ['http://localhost:5173/', 'https://job-genie-u1ji.onrender.com'],
+    origin: ['http://localhost:5173/'],
     credentials: true
 }))
 app.use(express.json())
